@@ -1,0 +1,28 @@
+{
+  "name": "mssql-redis",
+  "version": "0.0.1",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "TzachiSh",
+  "license": "ISC",
+  "dependencies": {
+    "ioredis": "^4.9.5",
+    "md5": "^2.2.1",
+    "moment": "^2.24.0",
+    "mssql": "^6.0.0-alpha.9",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TzachiSh/mssql-redis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TzachiSh/mssql-redis/issues"
+  },
+  "homepage": "https://github.com/TzachiSh/mssql-redis#readme",
+  "description": ""
+}
