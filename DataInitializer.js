@@ -27,6 +27,7 @@ class DataInitializer {
      * @param {string} [redisString.host] redisString.host - Host of the Redis server,
      * @param {number} [redisString.port] - Port of the Redis server
      * @param {number} [redisString.maxRetriesPerRequest]
+     * @param {number} [redisString.timeToDelete]
      * @function
      */
     Redis(redisString){

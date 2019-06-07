@@ -22,13 +22,14 @@ module.exports = (redisConn) => {
          * @param {object} [options]
          * @param {string} options.key - key for redis
          * @param {string} [options.ttl=10] - cache ttl
+         * @param {number} [options.timeToDelete]
          * @return this
          */
         sql.Request.prototype.Cache = function (options){
             if(!options) options = {};
             this.key =  JSON.stringify(options.key);
             this.ttl = options.ttl || 10;
-
+            if(options.timeToDelete) this.timeToDelete = options.timeToDelete;
 
             this.isCache = true;
             return this;
@@ -41,12 +42,15 @@ module.exports = (redisConn) => {
                 else this.key += `:${name}:${value}`;
             });
             logger.debug(`[Redis] keyMaker ${this.key}`);
+            if(!this.key) throw new Error('[Error] The key cannot be null');
             return this;
         };
         sql.Request.prototype.SetToRedis = function(rows) {
+            let timeToDelete = this.timeToDelete || this.redisConn.options.timeToDelete;
             this.redisConn.hmset(this.key, "query:" + this.queryMd5, JSON.stringify(rows));
             this.expiration = UpdateExpiration(this.ttl);
             this.redisConn.hmset(this.key, "expiration:" + this.queryMd5, this.expiration);
+            if(Number.isInteger(timeToDelete)) this.redisConn.expire(this.key,timeToDelete);
             logger.info(`[Redis] saved in redis ${this.key} ` + this._currentRequest.parameters[0].value);
 
         };
@@ -76,19 +80,17 @@ module.exports = (redisConn) => {
             if(redisResult) return redisResult;
         }
         let recordset;
-        try{
+        try {
             let rows = await query.apply(this,arguments);
             logger.info('[MSSQL] Pull data from db');
             recordset = rows.recordset;
-            if(!(Array.isArray(recordset) && recordset.length)) {
+            if(!(Array.isArray(recordset) && recordset.length)){
 
             }else {
                 if(this.isCache && redisConn.status === 'ready')
                     this.SetToRedis(rows.recordset);
             }
-
-
-        }catch (e) {
+        } catch (e) {
             logger.error(`[SQL] ${e}`);
             let redisResults;
             if(redisConn.status === 'ready')
