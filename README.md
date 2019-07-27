@@ -35,7 +35,10 @@ npm i mssql-redis
 ```
 const MssqlRedis = require('mssql-redis');
 
-let mssqlRedis = new MssqlRedis.Redis(redisConfig)
+let mssqlRedis = new MssqlRedis()
+
+mssqlRedis.Redis(redisConfig)
+
 pool = await mssqlRedis.Connect(mssql)
 
 Cache options: 
@@ -43,7 +46,11 @@ ttl : time for use cache - defualt 10 seconds
 key: key for Cache (no must if you using input the key will be generated)
 timeToDelete //seconds to delete key Refresh every insert. will overwrite global value 
 
-pool().input('id',dal.sql.NVarChar,2).query('selete * from table where @id').Cache(options).then( console.log ) 
+pool.request()
+    .input('id',dal.sql.NVarChar,2)
+    .Cache(options)
+    .query('selete * from table where @id')
+    .then( console.log ) 
 
 
 # mssql-redis using mssql request pool for more available used: 

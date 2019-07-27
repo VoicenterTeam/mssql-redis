@@ -1,8 +1,8 @@
-const RedisMssql = require('./redisMssql');
-const Redis = require('ioredis');
+const IoRedis = require('ioredis');
 const logger = require('./logger');
 const winston = require('winston');
-let sql = require('mssql');
+const sql = require('mssql');
+const RedisMssql = require('./redisMssql');
 
 
 class DataInitializer {
@@ -19,7 +19,7 @@ class DataInitializer {
         if(options && options.logs){
             logger.add(new winston.transports.Console(options.logs))
         }
-       this.sql = sql;
+       this.sql = sql
     }
     /**
      *
@@ -37,7 +37,7 @@ class DataInitializer {
         };
         if(!this.redisString.retryStrategy) this.redisString.retryStrategy = () => 5000;
 
-        this.redisConn = new Redis(this.redisString);
+        this.redisConn = new IoRedis(this.redisString);
         this.redisConn.on('connect',(message) => {
             logger.info(`[Redis] connected to ${this.redisString.host}`)
         });
@@ -64,22 +64,21 @@ class DataInitializer {
      * @param {number} [mssqlString.pool.idleTimeoutMillis] The Number of milliseconds before closing an unused connection (default: 30000)
      * @return pool
      */
-    async Connect(mssqlString){
+     Connect(mssqlString){
         if(mssqlString) this.mssqlString = mssqlString;
         this.reconnectTimeOut = this.mssqlString.reconnectTimeOut || 5000;
+        RedisMssql(sql.Request, this.redisConn);
 
-        let redisMssql = RedisMssql(this.redisConn);
-        this.pool = await new redisMssql.ConnectionPool(this.mssqlString);
-        let pool = await this.pool.connect().then( pool => {
+        this.pool = new sql.ConnectionPool(this.mssqlString);
+        return this.pool.connect().then(pool => {
+            pool.Request = RedisMssql;
             logger.info('[SQL] connected to ' + this.mssqlString.server);
             return pool
-        }).catch( err => {
+        }).catch(err => {
             logger.error(`[SQL] ${this.mssqlString.server} - ${err}`);
             this.reconnect();
             return this.pool;
-        });
-
-        return () => pool.request()
+        })
 
     }
 
