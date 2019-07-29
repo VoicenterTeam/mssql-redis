@@ -46,6 +46,8 @@ class DataInitializer {
             logger.error(`[Redis] ${err.message}`)
         });
 
+        RedisMssql(sql.Request, this.redisConn);
+
         return this;
     }
     /**
@@ -67,30 +69,30 @@ class DataInitializer {
      Connect(mssqlString){
         if(mssqlString) this.mssqlString = mssqlString;
         this.reconnectTimeOut = this.mssqlString.reconnectTimeOut || 5000;
-        RedisMssql(sql.Request, this.redisConn);
 
-        this.pool = new sql.ConnectionPool(this.mssqlString);
-        return this.pool.connect().then(pool => {
+
+        let pool = new sql.ConnectionPool(this.mssqlString);
+        return pool.connect().then(pool => {
             pool.Request = RedisMssql;
             logger.info('[SQL] connected to ' + this.mssqlString.server);
             return pool
         }).catch(err => {
             logger.error(`[SQL] ${this.mssqlString.server} - ${err}`);
-            this.reconnect();
-            return this.pool;
+            this.reconnect(pool);
+            return pool;
         })
 
     }
 
-    reconnect() {
-        if(!this.isReconnecting && !this.pool.connected){
+    reconnect(pool) {
+        if(!this.isReconnecting && !pool.connected){
             this.isReconnecting = true;
             this._reconnect();
         }
     }
-    _reconnect() {
+    _reconnect(pool) {
         setTimeout(() => {
-            this.pool.connect().then(() => {
+            pool.connect().then(() => {
                 logger.info('[SQL] reconnected ' + this.mssqlString.server);
                 this.isReconnecting = false;
             }).catch((err) => {
