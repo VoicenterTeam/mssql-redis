@@ -18,85 +18,89 @@ module.exports = (Request, redisConn) => {
     const execute = Request.prototype.execute;
 
     /**
-        *
-        * @param {object} [options]
-        * @param {string} options.key - key for redis
-        * @param {string} [options.ttl=10] - cache ttl
-        * @param {number} [options.timeToDelete]
-        * @return this
-        */
-        Request.prototype.Cache = function (options){
-            this.redisConn = redisConn;
-            if(!options) options = {};
-            this.key =  options.key.replace(/\s/g, '');
-            this.ttl = options.ttl || 10;
-            if(options.timeToDelete) this.timeToDelete = options.timeToDelete;
-            if(!this.redisConn)
-                logger.error('[Redis] Not supply redis connection string but try using cache');
-            else
-                this.isCache = true;
-            return this;
-        };
-        Request.prototype._keyMaker = function () {
-            Object.keys(this.parameters).forEach( (key,i) => {
-                let name = this.parameters[key].name;
-                let value = this.parameters[key].value;
-                if(!i) this.key = `${name}:${value}`;
-                else this.key += `:${name}:${value}`;
-            });
-            logger.debug(`[Redis] keyMaker ${this.key}`);
-            if(!this.key) throw new Error('[Error] The key cannot be null');
-            return this;
-        };
-        Request.prototype.SetToRedis = function(rows) {
-            let timeToDelete = this.timeToDelete || this.redisConn.options.timeToDelete;
-            stringifyAsync(rows).then( stringifyRow =>
-                this.redisConn.hmset(this.key, "query:" + this.queryMd5, stringifyRow)
-            );
+     *
+     * @param {object} [options]
+     * @param {string} options.key - key for redis
+     * @param {string} [options.ttl=10] - cache ttl
+     * @param {number} [options.timeToDelete]
+     * @return this
+     */
+    Request.prototype.Cache = function (options = {}){
+        this.redisConn = redisConn;
+        this.key =  options.key.replace(/\s/g, '');
+        this.ttl = options.ttl || 10;
+        if(options.timeToDelete) this.timeToDelete = options.timeToDelete;
+        if(!this.redisConn)
+            logger.error('[Redis] Not supply redis connection string but try using cache');
+        else
+            this.isCache = true;
+        return this;
+    };
+    Request.prototype._keyMaker = function () {
+        Object.keys(this.parameters).forEach( (key,i) => {
+            let name = this.parameters[key].name;
+            let value = this.parameters[key].value;
+            if(!i) this.key = `${name}:${value}`;
+            else this.key += `:${name}:${value}`;
+        });
+        logger.debug(`[Redis] keyMaker ${this.key}`);
+        if(!this.key) throw new Error('[Error] The key cannot be null');
+        return this;
+    };
+    Request.prototype.SetToRedis = function(rows) {
+        let timeToDelete = this.timeToDelete || this.redisConn.options.timeToDelete;
+        stringifyAsync(rows).then( stringifyRow =>
+            this.redisConn.hmset(this.key, "query:" + this.queryMd5, stringifyRow)
+        );
 
-            this.expiration = UpdateExpiration(this.ttl);
-            this.redisConn.hmset(this.key, "expiration:" + this.queryMd5, this.expiration);
-            if(Number.isInteger(timeToDelete)) this.redisConn.expire(this.key,timeToDelete);
-            logger.debug(`[Redis] saved in redis`, {command:this._currentRequest.parameters[0].value ,
+        this.expiration = UpdateExpiration(this.ttl);
+        this.redisConn.hmset(this.key, "expiration:" + this.queryMd5, this.expiration);
+        if(Number.isInteger(timeToDelete)) this.redisConn.expire(this.key,timeToDelete);
+        logger.debug(`[Redis] saved in redis`, {command:this._currentRequest.parameters[0].value ,
             key:this.key,
             Md5:this.queryMd5
-            });
+        });
 
-        };
-        Request.prototype.GetFromRedis = async function (checkExpiration){
-            let date = GetDate();
-            if(!this.key){
-                this._keyMaker();
+    };
+    Request.prototype.GetFromRedis = async function (checkExpiration){
+        let date = GetDate();
+        if(!this.key){
+            this._keyMaker();
+        }
+        if(!this.expiration && checkExpiration) {
+            this.expiration = await this.redisConn.hget(this.key, "expiration:" + this.queryMd5)
+        }
+        if( !checkExpiration || this.expiration > date) {
+            let result = await this.redisConn.hget(this.key,"query:" + this.queryMd5);
+            if(!result) return result;
+            let parsedResult = JSON.parse(result);
+            if(Array.isArray(parsedResult) && parsedResult.length > 0){
+                logger.debug("[Redis] Pull data from redis",parsedResult);
+                return parsedResult
             }
-            if(!this.expiration && checkExpiration) {
-                this.expiration = await this.redisConn.hget(this.key, "expiration:" + this.queryMd5)
-            }
-            if( !checkExpiration || this.expiration > date) {
-                let result = await this.redisConn.hget(this.key,"query:" + this.queryMd5);
-                if(!result) return result;
-                let parsedResult = JSON.parse(result);
-                if(Array.isArray(parsedResult) && parsedResult.length > 0){
-                    logger.debug("[Redis] Pull data from redis",parsedResult);
-                    return parsedResult
-                }
-            }
-        };
+        }
+    };
 
     /**
      * @param {string} command
      * @param {Cache} cache
      * @return this
      */
-    Request.prototype.query = async function(command,cache) {
-        if(cache && typeof cache === 'object') {
-            this.Cache(cache)
+    Request.prototype.query = async function(command,options = {}) {
+        let cache = options.cache;
+        let refresh = options.refresh;
+        if(cache) {
+            if(cache === 'disable')
+                this.isCache = false;
+            else if(typeof cache === 'object')
+                this.Cache(cache)
         }
         if(!command) throw new Error('command cant be null');
         let queryMd5 = md5(command);
-        if(this.isCache && redisConn.status === 'ready'){
+        if(!refresh && this.isCache && redisConn.status === 'ready'){
             this.queryMd5 = queryMd5;
 
-           let redisResult  = await this.GetFromRedis(true);
+            let redisResult  = await this.GetFromRedis(true);
             if(redisResult) return redisResult;
         }
         try {
@@ -115,9 +119,9 @@ module.exports = (Request, redisConn) => {
         } catch (e) {
             logger.error(`[SQL] ${e}`);
             let redisResults;
-            if(redisConn.status === 'ready' && e.code !== 'EREQUEST')
+            if(this.isCache && redisConn.status === 'ready' && e.code !== 'EREQUEST')
                 redisResults =  await this.GetFromRedis(false);
-                if(redisResults) return redisResults;
+            if(redisResults) return redisResults;
             throw new Error(`[Error] ${arguments[0]}  ${e}`);
         }
 
