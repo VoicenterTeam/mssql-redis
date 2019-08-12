@@ -103,19 +103,14 @@ module.exports = (Request, redisConn) => {
             let redisResult  = await this.GetFromRedis(true);
             if(redisResult) return redisResult;
         }
+        let recordset =  null;
         try {
             let rows = await query.apply(this,arguments);
-            let recordsets = rows.recordsets;
+            recordset = rows.recordset;
             logger.debug('[MSSQL] Pull data from db',{
                 command,
-                recordsets
+                recordset
             });
-            if((Array.isArray(recordsets) && recordsets.length)){
-                if(this.isCache && redisConn.status === 'ready')
-                    this.SetToRedis(recordsets);
-            }
-            return recordsets
-
         } catch (e) {
             logger.error(`[SQL] ${e}`);
             let redisResults;
@@ -123,6 +118,13 @@ module.exports = (Request, redisConn) => {
                 redisResults =  await this.GetFromRedis(false);
             if(redisResults) return redisResults;
             throw new Error(`[Error] ${arguments[0]}  ${e}`);
+        }
+        if((Array.isArray(recordset) && recordset.length)){
+            if(this.isCache && redisConn.status === 'ready')
+                this.SetToRedis(recordset);
+            return recordset
+        }else {
+            throw Error('not found')
         }
 
     };
