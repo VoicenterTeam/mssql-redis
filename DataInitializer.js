@@ -67,17 +67,16 @@ class DataInitializer {
      * @return pool
      */
      Connect(mssqlString){
-        if(mssqlString) this.mssqlString = mssqlString;
-        this.reconnectTimeOut = this.mssqlString.reconnectTimeOut || 5000;
+        mssqlString.reconnectTimeOut = mssqlString.reconnectTimeOut || 5000;
 
 
-        let pool = new sql.ConnectionPool(this.mssqlString);
+        let pool = new sql.ConnectionPool(mssqlString);
         return pool.connect().then(pool => {
             pool.Request = RedisMssql;
-            logger.info('[SQL] connected to ' + this.mssqlString.server);
+            logger.info('[SQL] connected to ' + pool.config.server);
             return pool
         }).catch(err => {
-            logger.error(`[SQL] ${this.mssqlString.server} - ${err}`);
+            logger.error(`[SQL] ${pool.config.server} - ${err}`);
             this.reconnect(pool);
             return pool;
         })
@@ -87,23 +86,23 @@ class DataInitializer {
     reconnect(pool) {
         if(!this.isReconnecting && !pool.connected){
             this.isReconnecting = true;
-            this._reconnect();
+            this._reconnect(pool);
         }
     }
     _reconnect(pool) {
         setTimeout(() => {
             pool.connect().then(() => {
-                logger.info('[SQL] reconnected ' + this.mssqlString.server);
+                logger.info('[SQL] reconnected ' + pool.config.server);
                 this.isReconnecting = false;
             }).catch((err) => {
-                logger.error(`[SQL] ${this.mssqlString.server} - ${err}`);
+                logger.error(`[SQL] ${pool.config.server} - ${err}`);
                 if(err.code === 'EALREADYCONNECTED'){
                     this.isReconnecting = false;
                     return;
                 }
                 this._reconnect();
             })
-        }, this.reconnectTimeOut)
+        }, pool.config.reconnectTimeOut)
     }
 }
 
