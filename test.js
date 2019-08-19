@@ -2,7 +2,7 @@ let DAL = require('./DataInitializer');
 
 
 let dal = new DAL({logs:{
-        level: 'info'
+        level: 'debug'
     }});
 dal.Redis();
 let mssql = {
@@ -16,7 +16,7 @@ let mssql = {
         appName: "name"
     },
     pool: {
-        max: 10,
+        max: 2,
         min: 1
     },
 };
@@ -29,7 +29,10 @@ let StartInterval = async (useCache, interval) => {
 
         // pool.request().query()
         pool.request().query('SELECT GETUTCDATE();',{
-            key:'date'
+            cache:{
+                key:'date',
+                ttl:600
+            }
         }).then( row => {
              console.log(row);
                 timeout();
@@ -37,10 +40,10 @@ let StartInterval = async (useCache, interval) => {
                 // console.log(e.message)
             }
         );
-        pool.request().query('SELECT GETUTCDATE();',{
-            key:'date',
-            ttl: 500
-        })
+        // pool.request().query('SELECT GETUTCDATE();',{
+        //     key:'date',
+        //     ttl: 500
+        // })
         // pool.query('SELECT GETUTCDATE();').then( row => {
         //      console.log('2' ,row);
         //     timeout();
