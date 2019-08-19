@@ -35,11 +35,18 @@ class DataInitializer {
             port: 6379,
             host:'127.0.0.1'
         };
-        if(!this.redisString.retryStrategy) this.redisString.retryStrategy = () => 5000;
 
-        this.redisConn = new IoRedis(this.redisString);
+        if(!this.redisString.retryStrategy) this.redisString.retryStrategy = () => 5000;
+        if(Array.isArray(this.redisString.Cluster)){
+            this.redisConn = new IoRedis.Cluster(this.redisString.Cluster);
+        }else {
+            this.redisConn = new IoRedis(this.redisString);
+        }
         this.redisConn.on('connect',(message) => {
-            logger.info(`[Redis] connected to ${this.redisString.host}`)
+            if(this.redisString.Cluster)
+                logger.info('[Redis] Cluster started',this.redisString.Cluster)
+            else
+                logger.info(`[Redis] connected to ${this.redisString.host}`)
         });
 
         this.redisConn.on('error',(err) => {
