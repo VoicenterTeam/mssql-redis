@@ -19,11 +19,8 @@
   "devDependencies": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TzachiSh/mssql-redis.git"
+    "url": "git+https://bitbucket.org/voicenterdev/mssql-redis.git"
   },
-  "bugs": {
-    "url": "https://github.com/TzachiSh/mssql-redis/issues"
-  },
-  "homepage": "https://github.com/TzachiSh/mssql-redis#readme",
+  "homepage": "https://bitbucket.org/voicenterdev/mssql-redis#readme",
   "description": ""
 }

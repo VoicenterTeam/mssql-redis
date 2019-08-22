@@ -89,6 +89,8 @@ module.exports = (Request, redisConn) => {
     Request.prototype.query = async function(command,options = {}) {
         let cache = options.cache;
         let refresh = options.refresh;
+        let type = options.type === 'recordsets' ? 'recordsets' : 'recordset'
+
         if(cache) {
             if(cache === 'disable')
                 this.isCache = false;
@@ -106,7 +108,7 @@ module.exports = (Request, redisConn) => {
         let recordset =  null;
         try {
             let rows = await query.apply(this,arguments);
-            recordset = rows.recordset;
+            recordset = rows[type];
             logger.debug('[MSSQL] Pull data from db',{
                 command,
                 recordset
