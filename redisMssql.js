@@ -101,9 +101,13 @@ module.exports = (Request, redisConn) => {
         let queryMd5 = md5(command);
         if(!refresh && this.isCache && redisConn.status === 'ready'){
             this.queryMd5 = queryMd5;
-
-            let redisResult  = await this.GetFromRedis(true);
-            if(redisResult) return redisResult;
+            try{
+                let redisResult  = await this.GetFromRedis(true);
+                if(redisResult) return redisResult;
+            }catch (e) {
+                logger.error('[Redis]' ,e.message)
+                //redisConn.status = 'offline'
+            }
         }
         let recordset =  null;
         try {
