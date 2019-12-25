@@ -98,9 +98,8 @@ module.exports = (Request, redisConn) => {
                 this.Cache(cache)
         }
         if(!command) throw new Error('command cant be null');
-        let queryMd5 = md5(command);
+        this.queryMd5 = md5(command);
         if(!refresh && this.isCache && redisConn.status === 'ready'){
-            this.queryMd5 = queryMd5;
             try{
                 let redisResult  = await this.GetFromRedis(true);
                 if(redisResult) return redisResult;
