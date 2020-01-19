@@ -4,6 +4,7 @@ const moment = require('moment');
 const logger = require('./logger');
 const yj  = require('yieldable-json');
 const promisify = require('util').promisify;
+const _ = require('lodash/fp');
 const stringifyAsync = promisify(yj.stringifyAsync);
 
 
@@ -126,7 +127,7 @@ module.exports = (Request, redisConn) => {
         }
         if((Array.isArray(recordset) && recordset.length)){
             if(this.isCache && redisConn.status === 'ready')
-                this.SetToRedis(recordset);
+                this.SetToRedis(_.cloneDeep(recordset));
             return recordset
         }else {
             throw Error('not found')
