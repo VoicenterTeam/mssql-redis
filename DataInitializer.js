@@ -39,7 +39,9 @@ class DataInitializer {
 
         if(!this.redisString.retryStrategy) this.redisString.retryStrategy = () => 5000;
         if(Array.isArray(this.redisString.Cluster)){
-            this.redisConn = new IoRedis.Cluster(this.redisString.Cluster);
+            let cluster = this.redisString.Cluster;
+            delete this.redisString.Cluster;
+            this.redisConn = new IoRedis.Cluster(cluster,this.redisString);
         }else {
             this.redisConn = new IoRedis(this.redisString);
         }
