@@ -6,6 +6,7 @@ const yj  = require('yieldable-json');
 const promisify = require('util').promisify;
 const _ = require('lodash/fp');
 const stringifyAsync = promisify(yj.stringifyAsync);
+const DalError = require('./errorHandler');
 
 
 let GetDate = () =>  moment().unix().valueOf();
@@ -123,14 +124,14 @@ module.exports = (Request, redisConn) => {
             if(this.isCache && redisConn.status === 'ready' && e.code !== 'EREQUEST')
                 redisResults =  await this.GetFromRedis(false);
             if(redisResults) return redisResults;
-            throw new Error(`[Error] ${arguments[0]}  ${e}`);
+            throw new DalError('Got a error from DB and cache is empty',500,arguments[0]);
         }
         if((Array.isArray(recordset) && recordset.length)){
             if(this.isCache && redisConn.status === 'ready')
                 this.SetToRedis(_.cloneDeep(recordset));
             return recordset
         }else {
-            throw Error('not found')
+            throw new DalError(this.key || '' + 'DB Result is empty',404,arguments[0]);
         }
 
     };
