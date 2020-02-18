@@ -4,9 +4,12 @@ const winston = require('winston');
 const sql = require('mssql');
 const RedisMssql = require('./redisMssql');
 const Connection = require('./connection');
+const EventEmitter = require('events');
 
 
-class DataInitializer {
+
+
+class DataInitializer extends EventEmitter{
     /**
      *
      * @param {object} [options]
@@ -16,10 +19,10 @@ class DataInitializer {
      * @param {winston.stream} [options.logs.stream] - The WriteableStream to write output to.
      * @constructor
      */
-    constructor(options) {
-        if(options && options.logs){
-            logger.add(new winston.transports.Console(options.logs))
-        }
+    constructor(options = {}) {
+        super();
+       if(options.logs) logger.add(new winston.transports.Console(options.logs));
+
        this.sql = sql
     }
     /**
@@ -56,7 +59,7 @@ class DataInitializer {
             logger.error(`[Redis] ${err.message}`)
         });
 
-        RedisMssql(sql.Request, this.redisConn);
+        RedisMssql(sql.Request, this);
 
         return this;
     }

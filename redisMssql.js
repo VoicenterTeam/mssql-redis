@@ -14,10 +14,11 @@ let GetDate = () =>  moment().unix().valueOf();
 let UpdateExpiration = ttl => moment().add(ttl,"seconds").unix().valueOf();
 
 
-module.exports = (Request, redisConn) => {
+module.exports = function (Request,self) {
 
     const query = Request.prototype.query;
     const execute = Request.prototype.execute;
+    const redisConn = self.redisConn
 
     /**
      *
@@ -101,12 +102,16 @@ module.exports = (Request, redisConn) => {
         }
         if(!command) throw new Error('command cant be null');
         this.queryMd5 = md5(command);
-        if(!refresh && this.isCache && redisConn.status === 'ready'){
+        if(!refresh && this.isCache && this.redisConn.status === 'ready'){
             try{
                 let redisResult  = await this.GetFromRedis(true);
-                if(redisResult) return redisResult;
+                if(redisResult){
+                    self.emit('redis',null,redisResult);
+                    return redisResult;
+                }
             }catch (e) {
                 logger.error('[Redis]' ,e.message)
+                self.emit('redis',e);
                 //redisConn.status = 'offline'
             }
         }
@@ -118,8 +123,10 @@ module.exports = (Request, redisConn) => {
                 command,
                 recordset
             });
+            self.emit('mssql',null,recordset);
         } catch (e) {
             logger.error(`[SQL] ${e}`);
+            self.emit('mssql',e);
             let redisResults;
             if(this.isCache && redisConn.status === 'ready' && e.code !== 'EREQUEST')
                 redisResults =  await this.GetFromRedis(false);
@@ -127,7 +134,7 @@ module.exports = (Request, redisConn) => {
             throw new DalError('Got a error from DB and cache is empty',500,arguments[0]);
         }
         if((Array.isArray(recordset) && recordset.length)){
-            if(this.isCache && redisConn.status === 'ready')
+            if(this.isCache && this.redisConn.status === 'ready')
                 this.SetToRedis(_.cloneDeep(recordset));
             return recordset
         }else {
