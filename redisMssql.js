@@ -50,6 +50,9 @@ module.exports = function (Request,self) {
         if(!this.key) throw new Error('[Error] The key cannot be null');
         return this;
     };
+    Request.prototype.type = function() {
+        return this._type || 0;
+    }
     Request.prototype.SetToRedis = function(rows) {
         let timeToDelete = this.timeToDelete || this.redisConn.options.timeToDelete;
         stringifyAsync(rows).then( stringifyRow =>
@@ -107,6 +110,7 @@ module.exports = function (Request,self) {
                 let redisResult  = await this.GetFromRedis(true);
                 if(redisResult){
                     self.emit('redis',null,redisResult);
+                    this._type = 2;
                     return redisResult;
                 }
             }catch (e) {
@@ -130,12 +134,16 @@ module.exports = function (Request,self) {
             let redisResults;
             if(this.isCache && redisConn.status === 'ready' && e.code !== 'EREQUEST')
                 redisResults =  await this.GetFromRedis(false);
-            if(redisResults) return redisResults;
+            if(redisResults){
+                this._type = 2;
+                return redisResults;
+            }
             throw new DalError('Got a error from DB and cache is empty',500,arguments[0]);
         }
         if((Array.isArray(recordset) && recordset.length)){
             if(this.isCache && this.redisConn.status === 'ready')
                 this.SetToRedis(_.cloneDeep(recordset));
+            this._type = 1;
             return recordset
         }else {
             throw new DalError(this.key || '' + 'DB Result is empty',404,arguments[0]);
