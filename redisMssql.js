@@ -55,9 +55,10 @@ module.exports = function (Request,self) {
     }
     Request.prototype.SetToRedis = function(rows) {
         let timeToDelete = this.timeToDelete || this.redisConn.options.timeToDelete;
-        stringifyAsync(rows).then( stringifyRow =>
-            this.redisConn.hmset(this.key, "query:" + this.queryMd5, stringifyRow)
-        );
+        // stringifyAsync(rows).then( stringifyRow =>
+        //     this.redisConn.hmset(this.key, "query:" + this.queryMd5, stringifyRow)
+        // );
+        this.redisConn.hmset(this.key, "query:" + this.queryMd5, JSON.stringify(rows))
 
         this.expiration = UpdateExpiration(this.ttl);
         this.redisConn.hmset(this.key, "expiration:" + this.queryMd5, this.expiration);
