@@ -96,6 +96,7 @@ module.exports = function (Request,self) {
     Request.prototype.query = async function(command,options = {}) {
         let cache = options.cache;
         let refresh = options.refresh;
+        let forceSave = options.forceSave;
         let type = options.type === 'recordsets' ? 'recordsets' : 'recordset'
 
         if(cache) {
@@ -141,7 +142,7 @@ module.exports = function (Request,self) {
             }
             throw new DalError('Got a error from DB and cache is empty',500,arguments[0]);
         }
-        if((Array.isArray(recordset) && recordset.length)){
+        if((Array.isArray(recordset) && recordset.length) || forceSave){
             if(this.isCache && this.redisConn.status === 'ready')
                 this.SetToRedis(_.cloneDeep(recordset));
             this._type = 1;
