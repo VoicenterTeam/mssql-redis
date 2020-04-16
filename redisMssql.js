@@ -108,8 +108,9 @@ module.exports = function (Request,self) {
         if(!command) throw new Error('command cant be null');
         this.queryMd5 = md5(command);
         if(!refresh && this.isCache && this.redisConn.status === 'ready'){
+            let redisResult;
             try{
-                let redisResult  = await this.GetFromRedis(true);
+                redisResult  = await this.GetFromRedis(true);
                 if(redisResult){
                     self.emit('redis',null,redisResult);
                     this._type = 2;
@@ -119,6 +120,9 @@ module.exports = function (Request,self) {
                 logger.error('[Redis]' ,e.message)
                 self.emit('redis',e);
                 //redisConn.status = 'offline'
+            }
+            if(redisResult === '' && forceSave){
+                throw new DalError(this.key || '' + 'Redis Result is empty',404,arguments[0]);
             }
         }
         let recordset =  null;
@@ -146,6 +150,8 @@ module.exports = function (Request,self) {
             if(this.isCache && this.redisConn.status === 'ready')
                 this.SetToRedis(_.cloneDeep(recordset));
             this._type = 1;
+            if(forceSave && !(Array.isArray(recordset) && recordset.length))
+                throw new DalError(this.key || '' + 'DB Result is empty',404,arguments[0]);
             return recordset
         }else {
             throw new DalError(this.key || '' + 'DB Result is empty',404,arguments[0]);
