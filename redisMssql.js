@@ -135,7 +135,7 @@ module.exports = function (Request,self) {
             });
             self.emit('mssql',null,recordset);
         } catch (e) {
-            logger.error(`[SQL] ${e}`);
+            logger.error(`[SQL] ${e} ${arguments[0]}`);
             self.emit('mssql',e);
             let redisResults;
             if(this.isCache && redisConn.status === 'ready' && e.code !== 'EREQUEST')
