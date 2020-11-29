@@ -1,6 +1,6 @@
 {
   "name": "mssql-redis",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,10 +9,10 @@
   "author": "TzachiSh",
   "license": "ISC",
   "dependencies": {
-    "ioredis": "^4.15.1",
+    "ioredis": "^4.19.2",
     "md5": "^2.2.1",
     "moment": "^2.24.0",
-    "mssql": "^6.0.1",
+    "mssql": "^6.2.3",
     "winston": "^3.2.1",
     "yieldable-json": "^1.1.0",
     "lodash": "latest"
