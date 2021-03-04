@@ -118,7 +118,7 @@ module.exports = function (Request,self) {
                 }
             }catch (e) {
                 logger.error('[Redis]' ,e.message)
-                self.emit('redis',e);
+                self.emit('redis', new DalError(e.message,503, arguments[0]));
                 //redisConn.status = 'offline'
             }
             if(redisResult === '' && forceSave){
@@ -136,7 +136,7 @@ module.exports = function (Request,self) {
             self.emit('mssql',null,recordset);
         } catch (e) {
             logger.error(`[SQL] ${e} ${arguments[0]}`);
-            self.emit('mssql',e);
+            self.emit('mssql',new DalError(e,503,arguments[0]));
             let redisResults;
             if(this.isCache && redisConn.status === 'ready' && e.code !== 'EREQUEST')
                 redisResults =  await this.GetFromRedis(false);
