@@ -2,7 +2,6 @@ const sql = require('mssql');
 const md5 = require('md5');
 const moment = require('moment');
 const logger = require('./logger');
-const yj  = require('yieldable-json');
 const promisify = require('util').promisify;
 const _ = require('lodash/fp');
 const stringifyAsync = promisify(yj.stringifyAsync);
