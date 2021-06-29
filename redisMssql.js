@@ -2,9 +2,7 @@ const sql = require('mssql');
 const md5 = require('md5');
 const moment = require('moment');
 const logger = require('./logger');
-const promisify = require('util').promisify;
 const _ = require('lodash/fp');
-const stringifyAsync = promisify(yj.stringifyAsync);
 const DalError = require('./errorHandler');
 
 
@@ -54,9 +52,6 @@ module.exports = function (Request,self) {
     }
     Request.prototype.SetToRedis = function(rows) {
         let timeToDelete = this.timeToDelete || this.redisConn.options.timeToDelete;
-        // stringifyAsync(rows).then( stringifyRow =>
-        //     this.redisConn.hmset(this.key, "query:" + this.queryMd5, stringifyRow)
-        // );
         this.redisConn.hmset(this.key, "query:" + this.queryMd5, JSON.stringify(rows))
 
         this.expiration = UpdateExpiration(this.ttl);
