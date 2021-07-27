@@ -57,7 +57,7 @@ module.exports = function (Request,self) {
         this.expiration = UpdateExpiration(this.ttl);
         this.redisConn.hmset(this.key, "expiration:" + this.queryMd5, this.expiration);
         if(Number.isInteger(timeToDelete)) this.redisConn.expire(this.key,timeToDelete);
-        logger.debug(`[Redis] saved in redis`, {command:this._currentRequest.parameters[0].value ,
+        logger.debug(`[Redis] saved in redis`, {command:this._currentRequest.sqlTextOrProcedure ,
             key:this.key,
             Md5:this.queryMd5
         });
